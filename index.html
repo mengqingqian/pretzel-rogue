@@ -377,7 +377,7 @@ function openDeploy(node,elite){ selKind=null; pendingBattle={node:node||1,elite
  <button class="primary" onclick="confirmDeploy()">⚔ 开战 →</button></div>
  <div class="small" id="dpWarn"></div>`;
  renderDeploy(); showModal(); }
-function remainingOf(k){return lineup.filter(x=>x===k).length - run.pool.filter(p=>p.kind===k&&p.pos).length;}
+function remainingOf(k){return run.pool.filter(p=>p.kind===k&&!p.pos).length;}
 function cellPos(r,c){return {x:90+c*128,y:64+r*118};}
 function renderDeploy(){
  const grid=$("fgrid"); grid.innerHTML="";
@@ -385,7 +385,7 @@ function renderDeploy(){
   const cell=document.createElement("div");
   const u=run.pool.find(p=>p.pos&&p.pos.r===r&&p.pos.c===c);
   cell.className="fcell"+(u?" fill":"")+(c>=3?" front":"");
-  if(u){cell.innerHTML=`<img src="${spr(u.kind)}"><span>${CLS[u.kind].name}</span>`;cell.title="点击收回";}
+  if(u){cell.innerHTML=`<img src="${spr(u.kind)}"><span>${u.ref&&u.ref.bonus?"⭐":""}${CLS[u.kind].name}</span>`;cell.title="点击收回";}
   else {cell.innerHTML=(c>=3?"前":"后");cell.title="点击摆放";}
   cell.onclick=()=>{
    if(u){u.pos=null;selKind=null;}
@@ -516,7 +516,7 @@ function startBattle(node,elite){
  if(run.unitBonus>0){const poolA=KEYS.filter(k=>unlocked(k));const k2=poolA[Math.floor(Math.random()*poolA.length)];
   const c2=CLS[k2],st2=statOf(k2),rg2=RGROW[k2],lv2=1;
   const max2=Math.round(st2.hp*run.mulHp*allMul*(1+rg2.hp*0)*(aFlag?1.15:1));
-  const item={kind:k2,pos:null,pct:1,lv:1,xp:0};autoPlaceOne(item);run.pool.push(item);
+  const item={kind:k2,pos:null,pct:1,lv:1,xp:0,bonus:true};autoPlaceOne(item);run.pool.push(item);
   const cp=cellPos(item.pos.r,item.pos.c);
   units.push({ref:item,kind:k2,side:"ally",emoji:c2.emoji,img:spr(k2),name:c2.name,hp:max2,hpMax:max2,
    atk:Math.round(st2.atk*run.mulAtk),itv:st2.itv,rng:c2.rng,spd:c2.spd,x:cp.x,y:cp.y,last:0,healT:0,alive:true,dmgTake:1,lv:1,xp:0});

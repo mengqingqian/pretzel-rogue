@@ -2,7 +2,7 @@
 
 一款**roguelike 自动战斗**网页游戏——12 职业编队 + 自由阵型 + 分支地图 + 混合变现仿真。浏览器即开即玩，无需安装。
 
-**▶ 在线试玩**：部署后此处替换为 GitHub Pages 链接
+**▶ 在线试玩**：https://mengqingqian.github.io/pretzel-rogue/
 
 ## 项目来源
 

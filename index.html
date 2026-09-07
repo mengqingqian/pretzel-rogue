@@ -141,8 +141,8 @@ button:disabled{opacity:.4;cursor:not-allowed;filter:none}
   <div class="panel" style="margin-top:10px">
    <h4 style="font-size:12px;color:var(--tx2);margin-bottom:8px">对战与奖励</h4>
    <div class="small" style="line-height:1.9">
-    🏟 <b>Brawl</b>：与自己的镜像军团异步对决，胜利 +40 金币 +15 水晶<br>
-    ⚔ <b>每场胜利</b>：+4~18 金币（精英 ×1.5），Boss 通关另有 +80~160 金币 +30 水晶<br>
+    🏟 <b>Brawl</b>：与自己的镜像军团异步对决，胜利 +60 金币 +15 水晶<br>
+    ⚔ <b>每场胜利</b>：+12~36 金币（精英 ×1.5），Boss 通关另有 +80~160 金币 +30 水晶<br>
     🎁 <b>金宝箱</b>：100 水晶，开出「下局开局增益」（全队Lv+1 / +500铜币 / 攻+15% / 血+15%）<br>
     💥 Boss 首通每轮 +30 水晶
    </div>
@@ -227,16 +227,16 @@ const CLS={
  fighter:{name:"战士",emoji:"🛡️",hp:128,atk:16,itv:1050,rng:44,spd:62,cap:2,cost:0,role:"前排",melee:true},
  shooter:{name:"射手",emoji:"🏹",hp:58,atk:14,itv:900,rng:235,spd:46,cap:2,cost:0,role:"输出"},
  healer:{name:"奶妈",emoji:"💊",hp:82,atk:5,itv:1500,rng:200,spd:46,cap:1,cost:0,role:"治疗",hold:true},
- mage:{name:"法师",emoji:"🔮",hp:54,atk:30,itv:2300,rng:245,spd:38,cap:1,cost:150,role:"爆发"},
- tank:{name:"坦克",emoji:"🛻",hp:235,atk:11,itv:1350,rng:46,spd:48,cap:1,cost:300,role:"重坦",melee:true},
- ninja:{name:"忍者",emoji:"🥷",hp:74,atk:25,itv:600,rng:48,spd:100,cap:1,cost:450,role:"刺客",melee:true},
- mortar:{name:"迫击手",emoji:"💣",hp:62,atk:48,itv:3300,rng:265,spd:30,cap:1,cost:750,role:"重炮"},
- drummer:{name:"鼓手",emoji:"🥁",hp:70,atk:6,itv:1800,rng:220,spd:46,cap:1,cost:900,role:"光环",hold:true},
- flagBearer:{name:"旗手",emoji:"🚩",hp:88,atk:9,itv:1400,rng:44,spd:50,cap:1,cost:1050,role:"士气",melee:true},
- ronin:{name:"浪人",emoji:"⚔️",hp:78,atk:26,itv:950,rng:52,spd:88,cap:1,cost:1200,role:"剑豪",melee:true},
- chef:{name:"卷饼厨师",emoji:"🍩",hp:96,atk:11,itv:1250,rng:46,spd:52,cap:1,cost:1500,role:"坦辅",melee:true}};
+ mage:{name:"法师",emoji:"🔮",hp:54,atk:30,itv:2300,rng:245,spd:38,cap:1,cost:120,role:"爆发"},
+ tank:{name:"坦克",emoji:"🛻",hp:235,atk:11,itv:1350,rng:46,spd:48,cap:1,cost:250,role:"重坦",melee:true},
+ ninja:{name:"忍者",emoji:"🥷",hp:74,atk:25,itv:600,rng:48,spd:100,cap:1,cost:350,role:"刺客",melee:true},
+ mortar:{name:"迫击手",emoji:"💣",hp:62,atk:48,itv:3300,rng:265,spd:30,cap:1,cost:550,role:"重炮"},
+ drummer:{name:"鼓手",emoji:"🥁",hp:70,atk:6,itv:1800,rng:220,spd:46,cap:1,cost:700,role:"光环",hold:true},
+ flagBearer:{name:"旗手",emoji:"🚩",hp:88,atk:9,itv:1400,rng:44,spd:50,cap:1,cost:800,role:"士气",melee:true},
+ ronin:{name:"浪人",emoji:"⚔️",hp:78,atk:26,itv:950,rng:52,spd:88,cap:1,cost:900,role:"剑豪",melee:true},
+ chef:{name:"卷饼厨师",emoji:"🍩",hp:96,atk:11,itv:1250,rng:46,spd:52,cap:1,cost:1100,role:"坦辅",melee:true}};
 const KEYS=Object.keys(CLS);
-const UP_COST=[100,220,400,700,1100];
+const UP_COST=[60,140,260,450,700];
 const CAP_COST=[150,350,600];
 const owned=k=>S.owned[k]===true;
 const unlocked=k=>owned(k);
@@ -695,7 +695,7 @@ function floatTxt(t,x,y,color){const f=$("fxLayer");const s=document.createEleme
 function onEnd(win){
  if(!battle)return;
  if(battle.brawl){ S.stats.brawls=(S.stats.brawls||0)+1;
-  if(win){S.stats.brawlWin=(S.stats.brawlWin||0)+1;S.souls+=40;S.runes+=15;save();toast("🏟 Brawl 胜利！+40 金币 +15 水晶");sfx('win');}
+  if(win){S.stats.brawlWin=(S.stats.brawlWin||0)+1;S.souls+=60;S.runes+=15;save();toast("🏟 Brawl 胜利！+60 金币 +15 水晶");sfx('win');}
   else{save();toast("Brawl 失败——调整阵型再来");sfx('lose');}
   setTimeout(()=>{battle=null;run=null;paused=false;$("scrRun").classList.add("hidden");$("scrCamp").classList.remove("hidden");renderCamp();},700);
   return; }
@@ -705,7 +705,7 @@ function onEnd(win){
  lastGrown=battle.units.filter(u=>u.side==="ally"&&u.lv>1).map(u=>CLS[u.kind].name+" Lv"+u.lv);
  if(win){const boss=battle.room>=8;
   let base=Math.round((50+battle.room*15)*(boss?2.4:1)*(battle.elite?1.5:1));
-  const gg=boss?0:Math.round((4+battle.room*2)*(battle.elite?1.5:1));
+  const gg=boss?0:Math.round((8+battle.room*4)*(battle.elite?1.5:1));
   if(gg>0)S.souls+=gg;
   S.stats.wins=(S.stats.wins||0)+1;
   if(boss){S.stats.boss=(S.stats.boss||0)+1;const ss=Math.round(80+battle.room*10);const rr=30;S.souls+=ss;S.runes+=rr;save();
@@ -780,7 +780,7 @@ function showDeath(wipe){
  <div class="small">复活回滚 = 上一战开打前状态（含伤兵血条、战内等级与阵型）</div>`;
  $("drev").onclick=()=>{const f=()=>{addSlot("revive");hideModal();run.pool=run.snap.map(s=>({kind:s.kind,pos:s.pos?{...s.pos}:null,pct:s.pct,lv:s.lv||1,xp:s.xp||0}));toast("复活成功，回到战前！");startBattle(battle.room,battle.elite);};
   if(S.noAds)f();else if(canSlot("revive"))playAd("死亡复活(点位2)","revive",f);else toast("点位已达上限");};
- if($("dkeep"))$("dkeep").onclick=()=>{const f=()=>{addSlot("keep");const ss=Math.round(15+battle.room*7);S.souls+=ss;save();hideModal();toast("撤退成功 +"+ss+" 金币");setTimeout(leaveToCamp,450);};
+ if($("dkeep"))$("dkeep").onclick=()=>{const f=()=>{addSlot("keep");const ss=Math.round(25+battle.room*10);S.souls+=ss;save();hideModal();toast("撤退成功 +"+ss+" 金币");setTimeout(leaveToCamp,450);};
   if(S.noAds)f();else if(canSlot("keep"))playAd("带走50%(点位3)","keep",f);else toast("点位已达上限");};
  showModal();
 }

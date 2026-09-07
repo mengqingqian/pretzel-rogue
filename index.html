@@ -243,11 +243,11 @@ const unlocked=k=>owned(k);
 const lvl=k=>S.lvl[k]||0;
 function dist2(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function statOf(k){const c=CLS[k];const l=lvl(k);const g=MGROW[k];
- return {hp:Math.round(c.hp*(1+g.hp*l)),atk:Math.round(c.atk*(1+g.atk*l)),itv:Math.max(220,c.itv*Math.pow(0.98,l))};}
+ return {hp:Math.round(c.hp*Math.pow(1+g.hp,l)),atk:Math.round(c.atk*Math.pow(1+g.atk,l)),itv:Math.max(220,c.itv*Math.pow(0.96,l))};}
 /* ================= 双梯度 ================= */
-const MGROW={peasant:{hp:.10,atk:.08},fighter:{hp:.12,atk:.10},shooter:{hp:.07,atk:.13},healer:{hp:.10,atk:.05},
- mage:{hp:.06,atk:.15},tank:{hp:.18,atk:.06},ninja:{hp:.08,atk:.13},mortar:{hp:.07,atk:.14},
- drummer:{hp:.09,atk:.04},flagBearer:{hp:.11,atk:.07},ronin:{hp:.08,atk:.14},chef:{hp:.12,atk:.08}};
+const MGROW={peasant:{hp:.25,atk:.23},fighter:{hp:.27,atk:.25},shooter:{hp:.25,atk:.27},healer:{hp:.27,atk:.18},
+ mage:{hp:.21,atk:.33},tank:{hp:.33,atk:.18},ninja:{hp:.25,atk:.29},mortar:{hp:.23,atk:.31},
+ drummer:{hp:.27,atk:.20},flagBearer:{hp:.29,atk:.20},ronin:{hp:.25,atk:.31},chef:{hp:.27,atk:.20}};
 const RGROW={peasant:{hp:.10,atk:.09},fighter:{hp:.14,atk:.12},shooter:{hp:.06,atk:.14},healer:{hp:.12,atk:.04},
  mage:{hp:.05,atk:.16},tank:{hp:.18,atk:.06},ninja:{hp:.07,atk:.14},mortar:{hp:.06,atk:.15},
  drummer:{hp:.10,atk:.04},flagBearer:{hp:.12,atk:.07},ronin:{hp:.07,atk:.15},chef:{hp:.13,atk:.07}};

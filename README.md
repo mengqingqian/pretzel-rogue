@@ -23,7 +23,7 @@
 
 ## 技术栈
 
-纯原生 HTML/CSS/JavaScript 单文件实现，无框架无构建；美术资源采用 [Kenney Tiny Dungeon](https://kenney.nl/assets/tiny-dungeon)（CC0 公共领域）。
+纯原生 HTML/CSS/JavaScript 单文件实现，无框架无构建；美术与音频资源：[Kenney Tiny Dungeon](https://kenney.nl/assets/tiny-dungeon)、[Kenney Interface/Impact Sounds](https://kenney.nl)（均为 CC0）；背景音乐 [Short Loops](https://opengameart.org/content/short-loops-background-music-pack) by hernandack（CC0）。
 
 ## 本地运行
 

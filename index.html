@@ -284,7 +284,19 @@ function sfx(k,vol){ if(S.mute)return;
   let a=_ac[k]; if(!a){a=new Audio(SND[k]);a.volume=vol||(k==="hit"?0.12:0.22);_ac[k]=a;}
   a.currentTime=0; a.play().catch(()=>{});
  }catch(e){} }
-document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('button'))sfx('click'); });
+document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('button'))sfx('click'); bgmKick(); });
+/* ================= 背景音乐（hernandack · CC0） ================= */
+const BGM={camp:"assets/music/bgm_camp.ogg",battle:"assets/music/bgm_battle.ogg"};
+let _bgm=null,_bgmTrack="";
+function bgmKick(){ if(S.mute)return; bgmPlay(_bgmTrack||"camp"); }
+function bgmPlay(track){ if(S.mute||typeof Audio==="undefined")return;
+ try{
+  if(_bgm&&_bgmTrack===track)return;
+  if(_bgm)_bgm.pause();
+  _bgm=new Audio(BGM[track]);_bgm.loop=true;_bgm.volume=0.15;_bgmTrack=track;
+  _bgm.play().catch(()=>{});
+ }catch(e){} }
+function bgmStop(){ try{if(_bgm)_bgm.pause();}catch(e){} }
 /* ================= 营地 ================= */
 let lineup=(S.lineup||[]).slice();
 function renderCamp(){
@@ -491,7 +503,7 @@ function doTrain(){ hideModal();const a=run.pool.filter(p=>p.pct>0)[Math.floor(M
  if(a){a.lv=Math.min(5,(a.lv||1)+1);toast(CLS[a.kind].name+" → Lv"+a.lv);} nextMap(); }
 /* ================= 战斗构建 ================= */
 function startBattle(node,elite){
- hideModal();
+ hideModal(); bgmPlay("battle");
  run.room=node; run.battleCount++; battle=null; paused=false; $("pauseBtn").textContent="⏸";
  if(elite)run.eliteNext=true;
  run.pool.forEach(p=>{if(!p.pos)autoPlaceOne(p);});
@@ -769,6 +781,7 @@ function showDeath(wipe){
 function retreatHome(){hideModal();toast("回到营地（成长保留）");leaveToCamp();}
 function leaveToCamp(){ battle=null;run=null;paused=false;
  $("scrRun").classList.add("hidden"); $("scrCamp").classList.remove("hidden"); renderCamp();
+ bgmPlay("camp");
  tryInterstitial();
 }
 /* ================= 商店 ================= */
@@ -834,6 +847,7 @@ $("brawlBtn").onclick=()=>{ if(!lineup.length){toast("请先编队");return;}
 };
 /* ================= Brawl 异步对决 ================= */
 function startBrawl(){ if(!lineup.length){toast("请先编队");return;}
+ bgmPlay("battle");
  if(!canSlot("brawl")){toast("今日 Brawl 次数已用完（3/日）");return;}
  day()["brawl"]=(slotUsed("brawl")||0)+1; S.stats.brawls=(S.stats.brawls||0)+1; save();
  run={brawl:true,layer:8,room:8,pool:lineup.map(k=>({kind:k,pos:null,pct:1,lv:1,xp:0})),
@@ -891,6 +905,7 @@ function drawAd(p){$("adProg").style.width=(p*100)+"%";}
 function adDone(){$("adScr").classList.add("hidden"); if(adCb){const c=adCb;adCb=null;c();toast("📺 播放完成");}}
 $("adSkip").onclick=()=>{clearInterval(adTimer);$("adScr").classList.add("hidden");adCb=null;toast("放弃 · 不扣次数(F2-09)");};
 $("admode").onclick=()=>{S.noAds=!S.noAds;save();refreshHud();toast(S.noAds?"免广告已开（激励自动发放）":"免广告已关");};
+$("muteBtn").onclick=()=>{S.mute=!S.mute;save();refreshHud();if(S.mute)bgmStop();else bgmKick();toast(S.mute?"已静音":"声音已开启");};
 /* ================= 事件绑定 ================= */
 $("runBtn").onclick=startRun;
 $("pauseBtn").onclick=()=>{if(!battle)return;paused=!paused;$("pauseBtn").textContent=paused?"▶":"⏸";

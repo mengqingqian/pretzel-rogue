@@ -142,6 +142,7 @@ button:disabled{opacity:.4;cursor:not-allowed;filter:none}
    <h4 style="font-size:12px;color:var(--tx2);margin-bottom:8px">对战与奖励</h4>
    <div class="small" style="line-height:1.9">
     🏟 <b>Brawl</b>：与自己的镜像军团异步对决，胜利 +40 金币 +15 水晶<br>
+    ⚔ <b>每场胜利</b>：+4~18 金币（精英 ×1.5），Boss 通关另有 +80~160 金币 +30 水晶<br>
     🎁 <b>金宝箱</b>：100 水晶，开出「下局开局增益」（全队Lv+1 / +500铜币 / 攻+15% / 血+15%）<br>
     💥 Boss 首通每轮 +30 水晶
    </div>
@@ -704,17 +705,19 @@ function onEnd(win){
  lastGrown=battle.units.filter(u=>u.side==="ally"&&u.lv>1).map(u=>CLS[u.kind].name+" Lv"+u.lv);
  if(win){const boss=battle.room>=8;
   let base=Math.round((50+battle.room*15)*(boss?2.4:1)*(battle.elite?1.5:1));
+  const gg=boss?0:Math.round((4+battle.room*2)*(battle.elite?1.5:1));
+  if(gg>0)S.souls+=gg;
   S.stats.wins=(S.stats.wins||0)+1;
   if(boss){S.stats.boss=(S.stats.boss||0)+1;const ss=Math.round(80+battle.room*10);const rr=30;S.souls+=ss;S.runes+=rr;save();
    showWin(base,true,ss,rr);return;}
-  save();showWin(base,false,0);}
+  save();showWin(base,false,gg);}
  else showDeath(run.pool.filter(p=>p.pct>0).length===0);
 }
 function showWin(gold,boss,clearSouls,clearRunes){
  sfx('win');
  const box=$("modalInner");
  box.innerHTML=`<h2 style="color:var(--ok)">✔ ${boss?"通关 · Boss 击破":"战斗胜利"}${battle.elite?"（精英）":""}</h2>
- <p>获得 <b class="gold">${gold} 铜币</b>${boss?(" + "+clearSouls+" 金币 + "+clearRunes+" 水晶"):""}${lastGrown&&lastGrown.length?`；<b class="grn">战内升级：${lastGrown.join("、")}</b>（不带回营地）`:""}；<b>三选一</b>白送奖励（无广告，F1-03）——选定后其余两项锁定：</p>
+ <p>获得 <b class="gold">${gold} 铜币</b>${clearSouls>0?(" + "+clearSouls+" 金币"):""}${boss?(" + "+clearRunes+" 水晶"):""}${lastGrown&&lastGrown.length?`；<b class="grn">战内升级：${lastGrown.join("、")}</b>（不带回营地）`:""}；<b>三选一</b>白送奖励（无广告，F1-03）——选定后其余两项锁定：</p>
  <div class="three">
   <div class="card" id="rw-gold" onclick="pickR('gold',this)"><div style="font-size:24px">🪙</div><b>金币加成</b><div class="small">额外 +50% 铜币</div></div>
   <div class="card" id="rw-unit" onclick="pickR('unit',this)"><div style="font-size:24px">🎖️</div><b>单位券</b><div class="small">下战+1 随机职业</div></div>

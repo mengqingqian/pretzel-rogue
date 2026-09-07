@@ -89,6 +89,10 @@ button:disabled{opacity:.4;cursor:not-allowed;filter:none}
 .fcell:hover{border-color:var(--ac2)}
 .fcell.fill{background:rgba(110,168,255,.1);border:1px solid var(--bl);color:var(--tx)}
 .fcell.front{background:rgba(255,107,74,.05)}
+.fcell{position:relative}
+.fhp{position:absolute;bottom:3px;left:4px;right:4px;height:4px;background:var(--hpbg);border-radius:2px;overflow:hidden}
+.fhp i{display:block;height:100%;background:#3ecf8e}
+.fcell.rng{background:rgba(62,207,142,.18)!important;border:1px solid var(--ok)!important}
 .fcell img{width:26px;height:26px;image-rendering:pixelated}
 .dchip{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:10px;border:1px solid var(--line2);cursor:pointer;font-size:13px;background:var(--panel2)}
 .dchip img{width:22px;height:22px;image-rendering:pixelated}
@@ -181,7 +185,7 @@ button:disabled{opacity:.4;cursor:not-allowed;filter:none}
    <div id="uLayer"></div><div id="fxLayer"></div>
   </div>
   <div class="small" style="margin-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
-   <span id="bSquad">阵型：—</span><span id="bBases"></span>
+   <span id="bSquad">阵型：—</span><span id="bBuffs" style="color:var(--ac2)"></span><span id="bBases"></span>
   </div>
  </div>
 </div>
@@ -253,6 +257,20 @@ const RGROW={peasant:{hp:.10,atk:.09},fighter:{hp:.14,atk:.12},shooter:{hp:.06,a
  drummer:{hp:.10,atk:.04},flagBearer:{hp:.12,atk:.07},ronin:{hp:.07,atk:.15},chef:{hp:.13,atk:.07}};
 const LV_XP=[0,30,70,120,180];
 const KXP={basic:12,fast:10,heavy:22,spawn:8};
+/* 职业介绍（悬停/点击查看） */
+const INTRO={
+ peasant:"民兵｜杂兵炮灰：成本 0、可无限编入（不受单职业上限），用来填线抗伤。无技能。",
+ fighter:"战士｜均衡前排·近战。技能【横扫】：目标 150% 伤害并波及近旁敌人(80%)。成长均衡，前期主力。",
+ shooter:"射手｜远程输出·射程235。技能【穿透箭】：贯穿目标及相邻 2 名敌人(各110%)。协同：双射手攻速+15%。",
+ healer:"奶妈｜治疗·射程200，全图优先治疗血量最低者。治疗也获得经验——辅助同样能升级。协同：与坦克组队受伤-20%。",
+ mage:"法师｜远程爆发·射程245。技能【火球】：弹射波及 3 名敌人(各125%)。血薄务必站后排；满级 ATK 成长全队最高。",
+ tank:"坦克｜重装前排·近战。技能【战吼】：3.2 秒受伤-45% 并回血 10%。HP 成长全队最高。协同：与奶妈组队受伤-20%。",
+ ninja:"忍者｜高速刺客·近战。技能【影袭】：300% 伤害。攻速全队最快，适合切敌方后排脆皮。",
+ mortar:"迫击手｜超远程重炮·射程265。技能【地毯轰炸】：240% 单发。攻速极慢(3.3s)，必须有前排保护。",
+ drummer:"鼓手｜光环辅助·射程220。光环：全队攻速+10%。技能【战鼓急速】：8 秒全队攻速+30%。",
+ flagBearer:"旗手｜士气光环·近战。光环：全队 HP 上限+15%。技能【军旗鼓舞】：全队 HP 上限再+10% 并回复同等血量。",
+ ronin:"浪人｜剑豪·近战。技能【居合】：对残血(35%以下)敌人直接斩杀，否则 250% 伤害。收人头、攒战内经验的一把好手。",
+ chef:"卷饼厨师｜坦辅·近战。技能【投喂卷饼】：范围回血 12%。耐久高，可当第二前排。"};
 /* ================= 贴图 ================= */
 const TILE={peasant:"0085",fighter:"0097",shooter:"0112",healer:"0099",mage:"0084",tank:"0096",ninja:"0100",
  mortar:"0088",drummer:"0117",flagBearer:"0111",ronin:"0098",chef:"0087"};
@@ -313,7 +331,7 @@ function renderCamp(){
   const e=document.createElement("div");e.className="u "+(unlocked(k)?(ok?"":"dis"):"lock");
   e.innerHTML=`<div class="ic"><img src="${spr(k)}">${unlocked(k)?`<div class="lvb">Lv${lvl(k)+1}</div>`:""}</div><div class="nm">${c.name}</div>
    <div class="st">${unlocked(k)?c.role:"未解锁"}</div><div class="cap">${unlocked(k)?("Lv"+(lvl(k)+1)+" · "+inQ+"/"+effCap(k)):"🔒"+c.cost+" 金币"}</div>`;
-  if(unlocked(k)){const ns=statOf(k);e.title="HP "+ns.hp+" · ATK "+ns.atk+"（含局外 Lv"+(lvl(k)+1)+" 加成）";}
+  if(unlocked(k)){const ns=statOf(k);e.title=INTRO[k]+"\n——————\n当前属性：HP "+ns.hp+" · ATK "+ns.atk+"（含局外 Lv"+(lvl(k)+1)+" 加成）";}
   e.onclick=()=>{if(!unlocked(k)){toast("先到养成区解锁 "+c.name);return;}if(ok){lineup.push(k);renderCamp();}else toast(inQ>=effCap(k)?"该职业已达上限":"编队已满/需扩编");};
   cb.appendChild(e);});
  const ub=$("upgradeBox");ub.innerHTML="";
@@ -366,10 +384,14 @@ function canAddToQ(k,q){const n=q.filter(x=>x===k).length;return unlocked(k)&&n<
 function effCap(k){ if(CLS[k].cap>=99)return 99; return Math.min(CLS[k].cap+(S.capBonus||0),3); }
 /* ================= 出征 ================= */
 let run=null,battle=null,paused=false,sessionAds=0;
+function restoreForm(pool){ const forms=(S.lastForm||[]).map(f=>({kind:f.kind,pos:f.pos,used:false}));
+ pool.forEach(p=>{ const f=forms.find(x=>!x.used&&x.kind===p.kind&&x.pos);
+  if(f){p.pos={...f.pos};f.used=true;} }); }
 function startRun(){ if(!lineup.length){toast("请先编队至少 1 人");return;}
  S.stats.runs=(S.stats.runs||0)+1;save();
- run={layer:1,map:buildMap(),pool:lineup.map(k=>({kind:k,pos:null,pct:1,lv:1,xp:0})),
+ run={layer:1,chapter:1,map:buildMap(),pool:lineup.map(k=>({kind:k,pos:null,pct:1,lv:1,xp:0})),
   pretzels:0,buffs:[],mulAtk:1,mulHp:1,mulSpd:1,unitBonus:0,eliteNext:false,snap:null,battleCount:0};
+ restoreForm(run.pool);
  // 开局增益
  if(S.startBoost){const t=S.startBoost.t;
   if(t==="lv")run.pool.forEach(p=>p.lv=Math.min(5,(p.lv||1)+1));
@@ -385,31 +407,43 @@ function startRun(){ if(!lineup.length){toast("请先编队至少 1 人");return
 let selKind=null;
 function openDeploy(node,elite){ selKind=null; pendingBattle={node:node||1,elite:!!elite};
  const box=$("modalInner");
- box.innerHTML=`<h2>🗺 阵型设计 · ${run.pool.length} 人</h2>
- <p class="small">下方点选单位 → 点击格子摆放（再点已摆单位可收回）。近战放右列（前排），射手/法师/奶妈放左侧后排。<b class="grn">已自动载入你上一次的阵型，可直接调整</b>。</p>
+ const dead=run.pool.length-alivePool().length;
+ box.innerHTML=`<h2>🗺 阵型设计 · ${alivePool().length} 人出战</h2>${dead?`<p class="small" style="color:var(--bad)">💀 ${dead} 名单位已阵亡（本局无法出战，不占阵型位，下局复活）</p>`:""}
+ <p class="small">下方点选单位 → 点击格子摆放（再点已摆单位可收回）。<b>射程</b>：⚔近战 40~52（需贴身）· 🎯远程 200~265（站后排输出）——近战放右列（前排），远程/奶妈放左侧后排，否则远程会被贴脸。<b class="grn">已自动载入你上一次的阵型，可直接调整</b>。</p>
  <div class="fgrid" id="fgrid"></div>
  <div style="font-size:11px;color:var(--tx2);margin-bottom:4px">待摆放（点选）：</div>
  <div class="roster" id="dpChips"></div>
+ <div class="small" id="dpIntro" style="margin-top:6px;min-height:30px;color:var(--tx2)"></div>
+ <div class="small" id="dpBuffs" style="margin-top:4px"></div>
  <div class="opt"><button onclick="autoForm()">⚖ 自动布阵</button>
  <button class="primary" onclick="confirmDeploy()">⚔ 开战 →</button></div>
  <div class="small" id="dpWarn"></div>`;
  renderDeploy(); showModal(); }
-function remainingOf(k){return run.pool.filter(p=>p.kind===k&&!p.pos).length;}
+function remainingOf(k){return run.pool.filter(p=>p.kind===k&&!p.pos&&p.pct>0).length;}
+function alivePool(){return run.pool.filter(p=>p.pct>0);}
 function cellPos(r,c){return {x:90+c*128,y:64+r*118};}
 function renderDeploy(){
  const grid=$("fgrid"); grid.innerHTML="";
+ const cells=[];
  for(let r=0;r<3;r++)for(let c=0;c<5;c++){
   const cell=document.createElement("div");
-  const u=run.pool.find(p=>p.pos&&p.pos.r===r&&p.pos.c===c);
+  const u=run.pool.find(p=>p.pos&&p.pos.r===r&&p.pos.c===c&&p.pct>0);
   cell.className="fcell"+(u?" fill":"")+(c>=3?" front":"");
-  if(u){cell.innerHTML=`<img src="${spr(u.kind)}"><span>${u.ref&&u.ref.bonus?"⭐":""}${CLS[u.kind].name}</span>`;cell.title="点击收回";}
+  if(u){const rng=CLS[u.kind].rng,pct=Math.round(u.pct*100),lv=u.lv||1;
+   const hpCol=pct>70?"#3ecf8e":pct>35?"#ffd166":"#ff5d6c";
+   cell.innerHTML=`<img src="${spr(u.kind)}"><span>${u.ref&&u.ref.bonus?"⭐":""}${CLS[u.kind].name}<br><b style="color:${rng>100?"var(--ac2)":"var(--tx2)"};font-size:9px">${rng>100?"🎯":"⚔"}${rng}</b> <b style="color:var(--ac);font-size:9px">Lv${lv}</b></span><div class="fhp"><i style="width:${pct}%;background:${hpCol}"></i></div>`;
+   cell.title=CLS[u.kind].name+" Lv"+lv+" · 血量 "+pct+"%\n"+INTRO[u.kind]+"\n——————\n攻击范围 "+rng+(rng>100?"（远程，站后排）":"（近战，站前排）");}
   else {cell.innerHTML=(c>=3?"前":"后");cell.title="点击摆放";}
+  cells.push({cell,r,c,u});
+  cell.onmouseenter=()=>{ if(!u)return; const c0=cellPos(u.pos.r,u.pos.c);
+   cells.forEach(x=>{ if(dist2(c0,cellPos(x.r,x.c))<=CLS[u.kind].rng) x.cell.classList.add("rng"); }); };
+  cell.onmouseleave=()=>{ cells.forEach(x=>x.cell.classList.remove("rng")); };
   cell.onclick=()=>{
    if(u){u.pos=null;selKind=null;}
    else{
     if(!selKind){toast("先在下方点选一个待摆放单位");return;}
     if(remainingOf(selKind)<=0){toast("该职业已全部摆放");selKind=null;renderDeploy();return;}
-    const item=run.pool.find(p=>p.kind===selKind&&!p.pos);
+    const item=run.pool.find(p=>p.kind===selKind&&!p.pos&&p.pct>0);
     if(item)item.pos={r,c};
     if(remainingOf(selKind)<=0)selKind=null;
    }
@@ -420,17 +454,25 @@ function renderDeploy(){
  let left=0;
  KEYS.forEach(k=>{const rem=remainingOf(k);if(rem<=0)return;left+=rem;
   const e=document.createElement("span");e.className="dchip"+(selKind===k?" sel":"");
-  e.innerHTML=`<img src="${spr(k)}"> ${CLS[k].name} ×${rem}`;
+  e.innerHTML=`<img src="${spr(k)}"> ${CLS[k].name} ×${rem} <span style="color:${CLS[k].rng>100?"var(--ac2)":"var(--tx2)"};font-size:10px">${CLS[k].rng>100?"🎯":"⚔"}射程${CLS[k].rng}</span>`;
+  e.title=INTRO[k];
+  e.title=CLS[k].name+" · 攻击范围 "+CLS[k].rng+(CLS[k].rng>100?"（远程，建议站左列后排）":"（近战，建议站右列前排）");
   e.onclick=()=>{selKind=selKind===k?null:k;renderDeploy();};
   chips.appendChild(e);});
  if(!left)chips.innerHTML=`<span class="grn small">全部摆放完毕 ✓</span>`;
- $("dpWarn").textContent="已摆 "+run.pool.filter(p=>p.pos).length+" / "+run.pool.length;
+ $("dpWarn").textContent="已摆 "+alivePool().filter(p=>p.pos).length+" / "+alivePool().length+"（阵亡 "+(run.pool.length-alivePool().length)+" 人不占位）";
+ const di=$("dpIntro");
+ if(selKind){const pend=run.pool.filter(p=>p.kind===selKind&&!p.pos&&p.pct>0).map(p=>"Lv"+(p.lv||1)+"·血"+Math.round(p.pct*100)+"%").join(" / ");
+  di.innerHTML="📖 "+INTRO[selKind]+(pend?"<br>待摆个体："+pend:"");}
+ else di.innerHTML="📖 点击上方职业可查看介绍";
+ $("dpBuffs").innerHTML=(run.buffs.length||run.mulAtk>1||run.mulHp>1)?("🎯 当前增益：<b>"+buffText()+"</b>"):"";
 }
 function autoForm(){
- run.pool.forEach(p=>p.pos=null);
- const melee=run.pool.filter(p=>CLS[p.kind].melee);
- const ranged=run.pool.filter(p=>!CLS[p.kind].melee&&p.kind!=="healer");
- const sup=run.pool.filter(p=>p.kind==="healer");
+ run.pool.forEach(p=>{if(p.pct>0)p.pos=null;});
+ const pool=alivePool();
+ const melee=pool.filter(p=>CLS[p.kind].melee);
+ const ranged=pool.filter(p=>!CLS[p.kind].melee&&p.kind!=="healer");
+ const sup=pool.filter(p=>p.kind==="healer");
  const cells=[];
  [4,3].forEach(c=>[1,0,2].forEach(r=>cells.push({r,c})));
  melee.forEach((p,i)=>{if(i<cells.length)p.pos=cells[i];});
@@ -440,12 +482,12 @@ function autoForm(){
  selKind=null;renderDeploy();
 }
 function confirmDeploy(){
- const un=run.pool.filter(p=>!p.pos);
- if(un.length){toast("还有 "+un.length+" 人未摆放");return;}
- S.lastForm=run.pool.map(p=>({kind:p.kind,pos:p.pos?{...p.pos}:null}));save();
+ const un=alivePool().filter(p=>!p.pos);
+ if(un.length){toast("还有 "+un.length+" 名存活单位未摆放");return;}
+ S.lastForm=alivePool().map(p=>({kind:p.kind,pos:p.pos?{...p.pos}:null}));save();
  const pb=pendingBattle||{node:run.layer,elite:false};
  hideModal(); startBattle(pb.node,pb.elite); }
-function autoPlaceOne(item){ const used=run.pool.filter(p=>p.pos).map(p=>p.pos.r+"_"+p.pos.c);
+function autoPlaceOne(item){ const used=alivePool().filter(p=>p.pos).map(p=>p.pos.r+"_"+p.pos.c);
  for(let r=0;r<3;r++)for(let c=0;c<5;c++){ if(!used.includes(r+"_"+c)){ item.pos={r,c}; return true; } }
  return false; }
 function buildMap(){ const m=[];
@@ -460,11 +502,16 @@ function buildMap(){ const m=[];
 const NODE_INFO={battle:{ic:"⚔️",n:"战斗",d:"标准敌军"},elite:{ic:"🔥",n:"精英战",d:"敌军更强 · 奖励+50%"},
  event:{ic:"🌀",n:"事件",d:"随机奇遇"},shop:{ic:"🏪",n:"商店",d:"购物 & 金币兑铜币"},
  rest:{ic:"🛖",n:"休整",d:"回血 / 训练"},boss:{ic:"💥",n:"BOSS",d:"击破即通关"}};
+function buffText(){ const dn={铁皮:"受伤-15%",嗜血:"击杀回血5%",疾跑:"移速+30%",利刃:"攻击+15%"};
+ let t=run.buffs.map(b=>dn[b]||b).join(" · ");
+ if(run.mulAtk>1)t+=(t?" · ":"")+"攻击+"+Math.round((run.mulAtk-1)*100)+"%";
+ if(run.mulHp>1)t+=(t?" · ":"")+"血量+"+Math.round((run.mulHp-1)*100)+"%";
+ return t||"无"; }
 function showMap(){ battle=null;paused=false;
  const box=$("modalInner"); const opts=run.map[run.layer-1];
  const uniq=[...new Set(opts)];
- box.innerHTML=`<h2>🗺 第 ${run.layer} 层 / 8</h2>
- <p class="small">铜币 <b class="gold">${Math.round(run.pretzels)}</b> · 阵型存活 ${run.pool.filter(p=>p.pct>0).length}/${run.pool.length} · 选择前进路线：</p>
+ box.innerHTML=`<h2>🗺 第 ${run.chapter||1} 章 · 第 ${run.layer} 层 / 8</h2>
+ <p class="small">铜币 <b class="gold">${Math.round(run.pretzels)}</b> · 阵型存活 ${run.pool.filter(p=>p.pct>0).length}/${run.pool.length} · 增益：<b>${buffText()}</b> · 选择前进路线：</p>
  <div class="rw">${uniq.map(t=>{const n=NODE_INFO[t];return `<div class="card" onclick="resolveNode('${t}')"><div style="font-size:26px">${n.ic}</div><b>${n.n}</b><div class="small">${n.d}</div></div>`;}).join("")}</div>
  <div class="small" style="margin-top:8px">下一层将在本层完成后展开 · 伤兵与战内等级持续携带</div>`;
  showModal();}
@@ -531,19 +578,22 @@ function startBattle(node,elite){
    dmgTake:(run.buffs.includes("铁皮")?0.85:1)*(syn.names.includes("坦奶(坦克减伤20%)")&&p.kind==="tank"?0.8:1)});
  });
  const d=node;
- const foes=elite?spawnEnemies(Math.min(8,d+2),true):spawnEnemies(d,false);
+ const ch=run.chapter||1, chM=Math.pow(1.45,ch-1), eff=d+(ch-1)*8;
+ const foes=elite?spawnEnemies(Math.min(16,eff+2),true):spawnEnemies(eff,false);
+ foes.forEach(u=>{u.hpMax=u.hp=Math.round(u.hpMax*chM);u.atk=Math.round(u.atk*chM);});
  battle={units:units.concat(foes),t:0,over:false,winner:null,bases:{a:100},room:node,foesN:foes.length,elite:!!elite};
  const boss=node>=8;
  if(boss){const bn=["卷饼王","机械巨鼠","幽灵领主"][Math.floor(Math.random()*3)];
   const b={kind:"peasant",side:"enemy",emoji:["🤖","🦾","👻"][Math.floor(Math.random()*3)],img:"assets/tiny-dungeon/Tiles/tile_"+ETILE.boss+".png",name:bn,hpMax:0,hp:0,atk:0,itv:2300,rng:130,spd:22,x:W-80,y:H/2,last:0,healT:0,alive:true,boss:true,summonT:6,enraged:false};
-  b.hpMax=b.hp=Math.round((500+100*node)*0.5); b.atk=Math.round(22+node*1.8); b.xpVal=120;
+  b.hpMax=b.hp=Math.round((500+100*eff)*0.5*chM); b.atk=Math.round((22+eff*1.8)*chM); b.xpVal=120;
   battle.units.push(b);
  }
- $("roomName").textContent=(elite?"🔥 精英战 · ":"")+(boss?"💥 最终战 · "+(battle.units.find(u=>u.boss)||{}).name:"第 "+d+" 层战斗");
- $("roomDesc").textContent=boss?"召唤爪兵 + 低血狂暴 · 击破即通关":"难度 D"+d+(elite?"+（精英）":"")+" · 守住本营 + 歼灭敌人";
+ $("roomName").textContent=(ch>1?"第"+ch+"章 · ":"")+(elite?"🔥 精英战 · ":"")+(boss?"💥 最终战 · "+(battle.units.find(u=>u.boss)||{}).name:"第 "+d+" 层战斗");
+ $("roomDesc").textContent=boss?"召唤爪兵 + 低血狂暴 · 击破后可深入下一章":"难度 D"+eff+(elite?"+（精英）":"")+(ch>1?"（第"+ch+"章）":"")+" · 守住本营 + 歼灭敌人";
  $("bL").textContent="我军 "+units.length+" 人";
  $("bR").textContent="敌 ×"+(foes.length+(boss?1:0));
  $("bSquad").textContent="阵型存活："+alivePoolText();
+ $("bBuffs").textContent=(run.buffs.length||run.mulAtk>1||run.mulHp>1)?("增益："+buffText()):"";
  $("scrRun").classList.remove("hidden");
  requestAnimationFrame(frame);
 }
@@ -551,7 +601,7 @@ function spawnEnemies(room,elite){
  const d=room; const laneN=Math.min(3+Math.floor(d/3),5); const list=[];
  let count=0;
  for(let i=0;i<laneN;i++){
-  let n=1+Math.floor(d/4)+(d>=5?1:0); if(elite&&i===0)n+=1;
+  let n=1+Math.floor(d/4)+(d>=5?1:0); if(elite&&i===0)n+=1; n=Math.min(n,4);
   for(let j=0;j<n;j++){
    const u={kind:"peasant",side:"enemy",name:"爪牙",emoji:["👾","👹","💀"][count%3],
     hp:0,hpMax:0,atk:0,itv:1000+Math.random()*200,rng:40,spd:52+Math.random()*12,
@@ -704,11 +754,12 @@ function onEnd(win){
   p.lv=u?u.lv:(p.lv||1); p.xp=u?u.xp:0;});
  lastGrown=battle.units.filter(u=>u.side==="ally"&&u.lv>1).map(u=>CLS[u.kind].name+" Lv"+u.lv);
  if(win){const boss=battle.room>=8;
-  let base=Math.round((50+battle.room*15)*(boss?2.4:1)*(battle.elite?1.5:1));
-  const gg=boss?0:Math.round((8+battle.room*4)*(battle.elite?1.5:1));
+  const ch=run.chapter||1;
+  let base=Math.round((50+battle.room*15)*(boss?2.4:1)*(battle.elite?1.5:1)*(1+0.35*(ch-1)));
+  const gg=boss?0:Math.round((8+battle.room*4)*(battle.elite?1.5:1)*(1+0.35*(ch-1)));
   if(gg>0)S.souls+=gg;
-  S.stats.wins=(S.stats.wins||0)+1;
-  if(boss){S.stats.boss=(S.stats.boss||0)+1;const ss=Math.round(80+battle.room*10);const rr=30;S.souls+=ss;S.runes+=rr;save();
+  S.stats.wins=(S.stats.wins||0)+1;S.stats.bestChapter=Math.max(S.stats.bestChapter||0,ch);
+  if(boss){S.stats.boss=(S.stats.boss||0)+1;const ss=Math.round((80+battle.room*10)*Math.pow(1.6,ch-1));const rr=30+10*(ch-1);S.souls+=ss;S.runes+=rr;save();
    showWin(base,true,ss,rr);return;}
   save();showWin(base,false,gg);}
  else showDeath(run.pool.filter(p=>p.pct>0).length===0);
@@ -763,9 +814,26 @@ function winChest(){ const btn=$("chB");
  if(S.noAds)f();else if(canSlot("chest"))playAd("战利品宝箱(点位6)","chest",f);else toast("chest 点位已达上限");}
 function finWin(mult){ const fn=()=>{ const g=Math.round(winCtx.gold*(mult===1?1:mult));run.pretzels+=g;hideModal();
   sfx('coin');toast("+ "+g+" 铜币");
-  if(winCtx.boss){toast("🏆 通关！金币与水晶已入账");setTimeout(()=>{battle=null;leaveToCamp();},500);return;}
+  if(winCtx.boss){toast("🏆 第"+(run.chapter||1)+"章通关！金币与水晶已入账");setTimeout(()=>{battle=null;chapterPrompt();},500);return;}
   nextMap(); };
  if(!S.noAds&&mult>1){ if(!canSlot("win15")){toast("win15 点位今日已达上限");return;} playAd("战后×"+mult+"(点位1)","win15",fn);} else fn(); }
+function chapterPrompt(){
+ const ch=(run.chapter||1)+1;
+ const box=$("modalInner");
+ box.innerHTML=`<h2>🏆 第 ${run.chapter||1} 章通关！</h2>
+ <p class="small">本层金币与水晶已入账 · 战内等级保留。选择下一步：</p>
+ <div class="rw">
+  <div class="card" onclick="enterChapter()"><div style="font-size:24px">⚔️</div><b>深入第 ${ch} 章</b><div class="small">敌人 ×1.45 · 奖励 ×1.6<br>进入时：阵亡者复活(半血) · 存活者回 50% 已损生命</div></div>
+  <div class="card" onclick="endRunNow()"><div style="font-size:24px">🏕</div><b>凯旋回营地</b><div class="small">结束本局结算 +50 金币 · 保留全部局外成长</div></div>
+ </div>
+ <div class="small">章节越深敌人越强（强度随章节复利增长）——量力而行</div>`;
+ showModal();}
+function enterChapter(){
+ run.chapter=(run.chapter||1)+1; run.layer=1; run.map=buildMap(); run.battleCount=0;
+ run.pool.forEach(p=>{ p.pct=p.pct>0?Math.min(1,p.pct+0.5):0.5; p.lv=1; p.xp=0; });
+ toast("⚔️ 进入第 "+run.chapter+" 章 · 全队章节休整完毕");
+ hideModal(); showMap(); }
+function endRunNow(){ S.souls+=50;save();toast("🏕 凯旋 +50 金币");hideModal();battle=null;leaveToCamp(); }
 function showDeath(wipe){
  sfx('lose');
  const rv=Math.max(0,AD_SLOT.revive-slotUsed("revive")),kp=Math.max(0,AD_SLOT.keep-slotUsed("keep"));

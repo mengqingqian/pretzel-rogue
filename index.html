@@ -312,6 +312,7 @@ function renderCamp(){
   const e=document.createElement("div");e.className="u "+(unlocked(k)?(ok?"":"dis"):"lock");
   e.innerHTML=`<div class="ic"><img src="${spr(k)}">${unlocked(k)?`<div class="lvb">Lv${lvl(k)+1}</div>`:""}</div><div class="nm">${c.name}</div>
    <div class="st">${unlocked(k)?c.role:"未解锁"}</div><div class="cap">${unlocked(k)?("Lv"+(lvl(k)+1)+" · "+inQ+"/"+effCap(k)):"🔒"+c.cost+" 金币"}</div>`;
+  if(unlocked(k)){const ns=statOf(k);e.title="HP "+ns.hp+" · ATK "+ns.atk+"（含局外 Lv"+(lvl(k)+1)+" 加成）";}
   e.onclick=()=>{if(!unlocked(k)){toast("先到养成区解锁 "+c.name);return;}if(ok){lineup.push(k);renderCamp();}else toast(inQ>=effCap(k)?"该职业已达上限":"编队已满/需扩编");};
   cb.appendChild(e);});
  const ub=$("upgradeBox");ub.innerHTML="";
@@ -323,7 +324,10 @@ function renderCamp(){
   if(S.souls>=cost)b.style.borderColor=ow?"var(--ac2)":"var(--ac)";
   b.appendChild(sub);
   b.title="局外永久成长：Lv"+(l+1)+"→Lv"+(l+2)+" · HP +"+Math.round(MGROW[k].hp*100)+"% / ATK +"+Math.round(MGROW[k].atk*100)+"%（带入每场战斗）";
-  b.onclick=()=>{if(S.souls<cost){toast("金币不足");return;}S.souls-=cost;if(!ow)S.owned[k]=true;S.lvl[k]=ow?l+1:1;save();toast(ow?c.name+"→Lv"+(l+2):"解锁："+c.name+" Lv1");renderCamp();};
+  b.onclick=()=>{if(S.souls<cost){toast("金币不足");return;}S.souls-=cost;if(!ow)S.owned[k]=true;S.lvl[k]=ow?l+1:1;save();
+   const ns=statOf(k);
+   toast(ow?(c.name+"→Lv"+(l+2)+"：HP "+ns.hp+" / ATK "+ns.atk+"（永久生效）"):("解锁："+c.name+" Lv1"));
+   renderCamp();};
   ub.appendChild(b);});
  const capb=$("capBox");capb.innerHTML="";
  if(S.cap<9){const idx=S.cap-6,cost=idx<CAP_COST.length?CAP_COST[idx]:900;
@@ -480,7 +484,7 @@ const EVENTS=[
  {ic:"🍥",n:"卷饼之神",d:"全队回满 · 随机一人战内等级 +1",f(){run.pool.forEach(p=>p.pct=1);const a=run.pool.filter(p=>p.pct>0)[Math.floor(Math.random()*run.pool.filter(p=>p.pct>0).length)];if(a){a.lv=Math.min(5,(a.lv||1)+1);toast(a.lv+" 级达成："+CLS[a.kind].name);}}},
  {ic:"🎯",n:"训练假人",d:"随机存活单位战内等级 +1",f(){const a=run.pool.filter(p=>p.pct>0)[Math.floor(Math.random()*run.pool.filter(p=>p.pct>0).length)];if(a){a.lv=Math.min(5,(a.lv||1)+1);toast(CLS[a.kind].name+" → Lv"+a.lv);}}},
  {ic:"🌀",n:"传送门",d:"直接跳到下一层（无奖励）",f(){toast("被传送…");}},
- {ic:"💎",n:"遗落的宝箱",d:"随机：单位券 或 +100 铜币",f(){if(Math.random()<0.5){run.unitBonus++;toast("单位券 +1");}else{run.pretzels+=100;toast("+100 铜币");}}}];
+ {ic:"💎",n:"遗落的宝箱",d:"随机：单位 或 +100 铜币",f(){if(Math.random()<0.5){grantBonusUnit("遗落宝箱");}else{run.pretzels+=100;toast("+100 铜币");}}}];
 function runEvent(){ const box=$("modalInner");
  const pool=[...EVENTS].sort(()=>Math.random()-0.5).slice(0,3);
  box.innerHTML=`<h2>🌀 事件房</h2><p class="small">选择一个奇遇（结果立即结算）：</p>
@@ -525,14 +529,6 @@ function startBattle(node,elite){
    rng:c.rng,spd:c.spd*(run.buffs.includes("疾跑")?1.3:1),x:cp.x,y:cp.y,last:0,healT:0,alive:true,
    dmgTake:(run.buffs.includes("铁皮")?0.85:1)*(syn.names.includes("坦奶(坦克减伤20%)")&&p.kind==="tank"?0.8:1)});
  });
- if(run.unitBonus>0){const poolA=KEYS.filter(k=>unlocked(k));const k2=poolA[Math.floor(Math.random()*poolA.length)];
-  const c2=CLS[k2],st2=statOf(k2),rg2=RGROW[k2],lv2=1;
-  const max2=Math.round(st2.hp*run.mulHp*allMul*(1+rg2.hp*0)*(aFlag?1.15:1));
-  const item={kind:k2,pos:null,pct:1,lv:1,xp:0,bonus:true};autoPlaceOne(item);run.pool.push(item);
-  const cp=cellPos(item.pos.r,item.pos.c);
-  units.push({ref:item,kind:k2,side:"ally",emoji:c2.emoji,img:spr(k2),name:c2.name,hp:max2,hpMax:max2,
-   atk:Math.round(st2.atk*run.mulAtk),itv:st2.itv,rng:c2.rng,spd:c2.spd,x:cp.x,y:cp.y,last:0,healT:0,alive:true,dmgTake:1,lv:1,xp:0});
-  run.unitBonus--; }
  const d=node;
  const foes=elite?spawnEnemies(Math.min(8,d+2),true):spawnEnemies(d,false);
  battle={units:units.concat(foes),t:0,over:false,winner:null,bases:{a:100},room:node,foesN:foes.length,elite:!!elite};
@@ -742,16 +738,23 @@ let winCtx=null,lastGrown=[];
 function pickR(t,el){ if(!winCtx||winCtx.claimed)return; winCtx.claimed=t;
  if(t==="mut"){const m=["铁皮","嗜血","疾跑","利刃"][Math.floor(Math.random()*4)];run.buffs.push(m);
   const dn={铁皮:"受伤-15%",嗜血:"击杀回5%",疾跑:"移速+30%",利刃:"攻击+15%"};toast("🧬 变异："+m+"（"+dn[m]+"）");}
- else if(t==="unit"){run.unitBonus++;toast("🎖 单位券 +1（下战生效）");}
+ else if(t==="unit"){grantBonusUnit("战利品");}
  else {const b=Math.round(winCtx.gold*0.5);run.pretzels+=b;toast("🪙 金币加成：额外 +"+b+" 铜币");}
  ["rw-gold","rw-unit","rw-mut"].forEach(id=>{const c=$(id);if(!c)return;
   if(c.id==="rw-"+t){c.style.borderColor="var(--ok)";c.querySelector(".small").textContent="✓ 已选";}
   else{c.style.opacity=.4;c.onclick=null;c.querySelector(".small").textContent="已锁定";}});
 }
+function grantBonusUnit(src){ if(!run)return 0;
+ const poolA=KEYS.filter(k=>unlocked(k)); if(!poolA.length)return 0;
+ const k2=poolA[Math.floor(Math.random()*poolA.length)];
+ const item={kind:k2,pos:null,pct:1,lv:1,xp:0,bonus:true};
+ run.pool.push(item);
+ toast("🎖 "+src+"：⭐"+CLS[k2].name+" 加入棋子池！下次布阵可安排位置");
+ return k2; }
 function winChest(){ const btn=$("chB");
  const f=()=>{addSlot("chest");sfx('chest');const r=Math.random();let msg;
   if(r<0.6){const g=Math.max(20,Math.round(winCtx.gold*0.5));run.pretzels+=g;msg="+ "+g+" 铜币";}
-  else if(r<0.85){run.unitBonus++;msg="🎖 随机单位券 +1";}
+  else if(r<0.85){msg="🎖 "+CLS[grantBonusUnit("宝箱")].name+" 加入棋子池";}
   else {const m=["铁皮","嗜血","疾跑","利刃"][Math.floor(Math.random()*4)];run.buffs.push(m);msg="🧬 变异："+m;}
   toast("📦 宝箱开出："+msg); if(btn){btn.disabled=true;btn.textContent="✅ 已开启";}};
  if(S.noAds)f();else if(canSlot("chest"))playAd("战利品宝箱(点位6)","chest",f);else toast("chest 点位已达上限");}
